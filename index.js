@@ -10,10 +10,12 @@ fs.readdir(process.cwd(), function(err, files){
 	}
 	console.log('Select which file or directory you want to see\n');
 
+	var stats = [];
 	function file(i){
 		var filename = files[i];
 		fs.stat(__dirname + '/' + filename, function(err, stat){ //fs.state返回文件或目录的元数据
 
+			stats[i] = stat; //将stat对象保存下来
 			//如果路径代表的是目录，则用不同的颜色标示
 			if(stat.isDirectory()){
 				console.log('	'+i+' \033[36m'+filename+'/\033[39m');
@@ -37,10 +39,28 @@ fs.readdir(process.cwd(), function(err, files){
 		stdin.on('data', option);	
 	}
 	function option(data){
-		if(!files[Number(data)]){
+		var filename = files[Number(data)];
+
+		if(!filename){
 			console.log('	\033[31mEnter your choice: \033[39m');
 		}else{
-			stdin.pause();
+			stdin.pause();//检查通过，再次将流暂停，便于程序顺利退出
+
+			if(stats[Number(data)].isDirectory()){
+				fs.readdir(__dirname+'/'+filename, function(err, files){
+					console.log('');
+					files.forEach(function(file){
+						console.log('	-	'+file);
+					})
+					console.log('');
+				})
+			}else{
+				fs.readFile(__dirname+'/'+filename, 'utf8', function(err, data){ //事先制定编码，得到的数据就是相应的字符串了
+					console.log('');
+					console.log('\033[90m' + data.replace(/(.*)/g, '	$1')+'\033[39m'); //添加辅助缩进
+				})				
+			}
+
 		}
 	}
 	file(0);
